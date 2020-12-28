@@ -69,8 +69,8 @@ $(info Using LLVM_BUILD_PATH = $(LLVM_BUILD_PATH))
 $(info Using LLVM_BIN_PATH = $(LLVM_BIN_PATH))
 $(info -----------------------------------------------)
 
-CXX := g++
-CXXFLAGS := -fno-rtti -O0 -g
+CXX := clang++
+CXXFLAGS := -fno-rtti -O0 -g -fvisibility=hidden
 PLUGIN_CXXFLAGS := -fpic
 
 LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
@@ -95,8 +95,7 @@ CLANG_INCLUDES := \
 # because there are circular dependencies that make the correct order difficult
 # to specify and maintain. The linker group options make the linking somewhat
 # slower, but IMHO they're still perfectly fine for tools that link with Clang.
-CLANG_LIBS := \
-	-Wl,--start-group \
+CLANG_LIBS_LIST := \
 	-lclangAST \
 	-lclangASTMatchers \
 	-lclangAnalysis \
@@ -119,8 +118,17 @@ CLANG_LIBS := \
 	-lclangSerialization \
 	-lclangToolingCore \
 	-lclangTooling \
-	-lclangFormat \
-	-Wl,--end-group
+	-lclangFormat
+
+# For compiling with macOS ld
+ifeq ($(shell uname),Darwin)
+	CLANG_LIBS := $(CLANG_LIBS_LIST)
+else
+	CLANG_LIBS := \
+		-Wl,--start-group \
+		$(CLANG_LIBS) \
+		-Wl,--end-group
+endif
 
 # Internal paths in this project: where to find sources, and where to put
 # build artifacts.
